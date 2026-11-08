@@ -33,7 +33,7 @@
 ## 三、界面总览
 
 ```
-<img width="1920" height="1009" alt="V1 0 0版本主图" src="https://github.com/user-attachments/assets/a381bb47-5376-42e8-89f9-084dfd54cdd2" />
+![v1.0 版本主界面](https://github.com/user-attachments/assets/a3181047-5376-42dd-8f93-084df41cd6d2)
 
 ```
 
