@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<title>chip提示词</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">chip提示词</div>
+  <div class="nav-scroll">
+    <div class="modes">
+      <span class="mode-ind" id="modeInd" aria-hidden="true"></span>
+      <button class="mode-btn active" data-mode="prompt">提示词模式</button>
+      <button class="mode-btn" data-mode="caption">打标模式</button>
+      <button class="mode-btn" data-mode="repo">打标库</button>
+      <button class="mode-btn" data-mode="taglib" id="modeTaglib">标签库</button>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span class="top-sep" aria-hidden="true"></span>
+    <span id="tip" class="top-tip"></span>
+    <button class="btn ghost tiny icon" id="btnPlugins" hidden title="已安装的插件（插件目录里检测到才显示）" aria-label="插件">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg>
+    </button>
+    <button class="btn ghost tiny icon" id="btnTagLib" onclick="openTagLib()" title="打开标签库：分类浏览、搜索、右键/拖拽管理标签" aria-label="标签库">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 2.5h6.2a1.8 1.8 0 0 1 1.8 1.8v9.2H5.3A1.8 1.8 0 0 1 3.5 11.7V2.5Z"/><path d="M3.5 11.5A1.8 1.8 0 0 0 5.3 13h6.2"/></svg>
+    </button>
+    <button class="btn ghost tiny icon" id="btnTheme" title="切换深色 / 浅色主题" aria-label="切换主题">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 9.6A5.6 5.6 0 0 1 6.4 2.6a5.6 5.6 0 1 0 7 7Z"/></svg>
+    </button>
+    <button class="btn ghost tiny icon" id="btnSettings" title="设置" aria-label="设置">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h6.2M11.6 4H14M2 8h2.6M7 8H14M2 12h6.2M11.6 12H14"/><circle cx="9.8" cy="4" r="1.6"/><circle cx="5.2" cy="8" r="1.6"/><circle cx="9.8" cy="12" r="1.6"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ============ 左侧：标签库 ============ -->
+  <section class="panel col-left pane" id="tagPanel">
+    <button class="pane-rail" type="button" onclick="togglePane('tagPanel')" title="展开标签库" aria-expanded="false">标签库</button>
+    <div class="panel-head">
+      <h3>标签库</h3>
+      <div class="pane-actions">
+        <span class="counter" id="tagCnt"></span>
+        <button class="btn tiny" onclick="addCategory()">＋分类</button>
+        <button class="pane-toggle" type="button" onclick="togglePane('tagPanel')" title="折叠标签库" aria-label="折叠标签库" aria-expanded="true">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>
+        </button>
+      </div>
+    </div>
+    <input class="search" id="search" placeholder="搜中文或英文">
+    <div class="tabs" id="tabs"></div>
+    <div class="tag-list" id="tagList"></div>
+    <div class="add-tag-row" id="addTagRow" hidden>
+      <button class="btn tiny ghost" style="width:100%" onclick="openTagCreate('main')" title="在当前选中的分类下创建新标签（名称+内容）">＋ 新建标签</button>
+    </div>
+  </section>
+
+  <div class="splitter main-splitter" id="splitLeft" role="separator" aria-orientation="vertical" aria-label="拖动调整标签库宽度" title="拖动调整宽度"></div>
+
+  <!-- ============ 提示词模式 ============ -->
+  <section class="panel col-right" id="viewPrompt">
+    <div class="panel-head">
+      <h3>提示词编辑</h3>
+      <div class="row">
+        <button class="btn tiny ghost" onclick="doTranslate('pos')">中 → 英（正向）</button>
+        <button class="btn tiny ghost" onclick="doTranslate('neg')">中 → 英（反向）</button>
+      </div>
+    </div>
+
+    <div class="editor-box">
+      <div class="editor-head">
+        <span class="name">正向提示词 <b class="en-label">Positive</b></span>
+        <span class="counter" id="cntPos">0 个标签</span>
+        <span style="margin-left:auto"></span>
+        <button class="btn tiny ghost" onclick="copyPrompt('pos')">📋 复制</button>
+        <button class="btn tiny ghost danger" onclick="clearPrompt('pos')">🗑 清空</button>
+      </div>
+      <div class="tagbox" id="posBox"></div>
+      <div class="suggest-wrap">
+        <input class="input" id="posAdd" placeholder="手动输入标签后回车（可逗号分隔多个，支持中文自动翻译）">
+        <div class="suggest-list" id="posSug"></div>
+      </div>
+    </div>
+
+    <div class="editor-box" style="margin-top:12px">
+      <div class="editor-head">
+        <span class="name">反向提示词 <b class="en-label">Negative</b></span>
+        <span class="counter" id="cntNeg">0 个标签</span>
+        <span style="margin-left:auto"></span>
+        <button class="btn tiny ghost" onclick="copyPrompt('neg')">📋 复制</button>
+        <button class="btn tiny ghost danger" onclick="clearPrompt('neg')">🗑 清空</button>
+      </div>
+      <div class="tagbox" id="negBox"></div>
+      <div class="suggest-wrap">
+        <input class="input" id="negAdd" placeholder="手动输入标签后回车（可逗号分隔多个，支持中文自动翻译）">
+        <div class="suggest-list" id="negSug"></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <button class="btn accent" onclick="copyPrompt('all')">📋 复制全部（正向 + 反向）</button>
+      <span class="counter" style="margin-left:auto">点选标签后：Alt+↑/↓ 调权重</span>
+    </div>
+  </section>
+
+  <!-- ============ 打标模式 ============ -->
+  <section class="panel col-right" id="viewCaption" style="display:none">
+    <div class="cap-wrap">
+      <div class="cap-left">
+        <div class="cap-bar">
+          <button class="btn tiny cap-open" type="button" onclick="openFolder()" title="打开图片文件夹">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1.2 1.5h4.8A1.5 1.5 0 0 1 14 6v5.5A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5v-7Z"/></svg>
+            <span>打开文件夹</span>
+          </button>
+          <span id="folderName" class="cap-path muted" title=""></span>
+          <span id="capProgress" class="cap-prog"></span>
+          <div class="cap-bar-right">
+            <span id="imgIdx" class="cap-file"></span>
+            <details class="more">
+              <summary class="btn tiny ghost more-btn" title="更多操作">更多</summary>
+              <div class="more-menu">
+                <button class="btn tiny ghost" type="button" onclick="gotoNextEmpty();this.closest('details').open=false">下一张未打标</button>
+              </div>
+            </details>
+          </div>
+        </div>
+        <div id="bigimg" class="bigimg"></div>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+
+      <div class="splitter" id="splitRight" role="separator" aria-orientation="vertical" aria-label="拖动调整右侧标签栏宽度" title="拖动调整宽度"></div>
+
+      <div class="cap-right pane" id="capRight">
+        <button class="pane-rail" type="button" onclick="togglePane('capRight')" title="展开当前图片标签" aria-expanded="false">当前图片标签</button>
+        <div class="panel-head">
+          <h3>当前图片标签</h3>
+          <div class="pane-actions">
+            <span class="counter" id="capCnt">0 个</span>
+            <button class="pane-toggle" type="button" onclick="togglePane('capRight')" title="折叠当前图片标签" aria-label="折叠当前图片标签" aria-expanded="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="cap-row">
+          <input class="input" id="triggerInput" placeholder="触发词（导出时排第一行）">
+          <button class="btn tiny" type="button" onclick="setTrigger()">设为触发词</button>
+        </div>
+        <label class="check"><input type="checkbox" id="triggerOnly"> 仅本张（不勾 = 整个文件夹共用）</label>
+
+        <div class="tagbox" id="capTags" style="flex:none;min-height:240px;max-height:560px;margin-top:8px"></div>
+        <div class="cap-row">
+          <input class="input" id="capAdd" placeholder="手动输入标签后回车（可逗号分隔多个，支持中文自动翻译）">
+        </div>
+        <div class="cap-row cap-tools">
+          <button class="btn tiny" type="button" onclick="translateAll(cur().tags, renderCapTags)">🌐 一键翻译</button>
+          <button class="btn tiny" type="button" onclick="translateAllFolder()">🌐 翻译全部</button>
+        </div>
+        <div class="hint">补齐当前图 / 本文件夹所有图标签的中英文对照</div>
+
+        <div class="cap-actions">
+          <button class="btn tiny accent" id="btnExport" onclick="exportAll()">📤 统一导出</button>
+          <button class="btn tiny ghost" id="btnApply" onclick="askApplyAll()">应用到全部</button>
+          <button class="btn tiny" type="button" onclick="clearCaption()">清除当前图</button>
+          <button class="btn tiny accent" id="btnFinishRecap" onclick="exitRecaption()" hidden>✓ 完成打标</button>
+        </div>
+        <div class="hint">自动暂存 · 统一导出一份写全部 .txt</div>
+        <div class="cap-danger">
+          <button class="btn tiny ghost danger" type="button" onclick="clearAllCaptions()">清空全部</button>
+          <button class="btn tiny ghost danger" type="button" onclick="deleteAllRecords()">🗑 删除全部记录</button>
+        </div>
+
+        <hr class="sep">
+        <div class="panel-head"><h3>打标库</h3></div>
+        <div class="cap-row cap-tools">
+          <button class="btn tiny" type="button" onclick="saveToRepo()">💾 存入库</button>
+          <button class="btn tiny" type="button" onclick="saveAllToRepo()">💾 全部存入库</button>
+          <button class="btn tiny ghost" type="button" onclick="switchMode('repo')">📂 打开仓库</button>
+        </div>
+        <div class="hint">图片会复制一份进库，原图删了库里还在；「全部存入库」= 当前文件夹里所有已打标的图</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 打标库（独立模块） ============ -->
+  <section class="panel col-right" id="viewRepo" style="display:none">
+    <div class="panel-head">
+      <h3>打标库 · 通用存储</h3>
+      <div class="row">
+        <input class="search" id="repoSearch" placeholder="按标签或文件名搜索" style="width:200px">
+        <button class="btn tiny ghost" id="btnSelMode" onclick="toggleSelMode()">选择</button>
+        <span class="counter" id="repoCnt">0 项</span>
+        <button class="btn tiny" onclick="translateRepoPending()">🌐 翻译未翻译</button>
+        <button class="btn tiny" onclick="openRepoAdd()">➕ 手动添加</button>
+        <button class="btn tiny ghost danger" onclick="askClearRepo()">清空仓库</button>
+      </div>
+    </div>
+    <div class="repo-batch" id="repoBatch" hidden>
+      <span id="selCount">已选 0 项</span>
+      <button class="btn tiny accent" onclick="recaptionSelected()">再次打标</button>
+      <button class="btn tiny" onclick="moveSelected()">移动到文件夹</button>
+      <button class="btn tiny" onclick="repoToPrompt(selectedRepoItems(), &quot;pos&quot;)" title="把选中条目的标签追加到正向提示词">📥 调用到正向</button>
+      <button class="btn tiny" onclick="repoToPrompt(selectedRepoItems(), &quot;neg&quot;)" title="把选中条目的标签追加到反向提示词">📥 调用到反向</button>
+      <button class="btn tiny ghost danger" onclick="deleteSelected()">删除</button>
+      <button class="btn tiny ghost" onclick="toggleSelMode()">取消</button>
+    </div>
+    <div class="hint">通用存储：与当前打开的文件夹无关，任何图打完标都能存进来，程序关掉也保留；之后打任何图都能从这里调出标签</div>
+    <div class="repo-main">
+      <aside class="repo-side" id="repoSide"></aside>
+      <div class="repo-grid" id="repoGrid"></div>
+    </div>
+    <div class="hint">单击选中（Ctrl 加减选、Shift 连选、Ctrl+A 全选）；双击看大图；右键出菜单：查看 / 调用正向·反向 / 移动到文件夹 / 复制路径 / 删除；把卡片拖到左边文件夹即可移动</div>
+  </section>
+
+  <!-- 打标库卡片右键菜单 -->
+  <div class="ctx-menu" id="repoItemCtx" hidden></div>
+
+  <!-- ============ 标签库（独立模块，与打标库同款布局） ============ -->
+  <section class="panel col-right" id="viewTagLib" style="display:none">
+    <div class="panel-head">
+      <h3>标签库 · 分类管理 <span class="counter" id="tagLibCnt">0 个</span></h3>
+      <div class="row" style="margin-left:auto">
+        <input class="search" id="tagLibSearch" placeholder="搜标签（中/英）" style="width:200px" oninput="renderTagLib()">
+        <button class="btn tiny accent" onclick="openTagCreate()">＋ 新建标签</button>
+        <button class="btn tiny ghost" onclick="addCategory()">＋ 新建分类</button>
+        <button class="btn tiny ghost tl-close" onclick="closeTagLib()" title="关闭（Esc）">✕</button>
+      </div>
+    </div>
+    <div class="hint">左侧分类可展开出「二级分类」；右键标签：复制 / 移动 / 重命名 / 删除（Ctrl/Shift 多选可批量）；右键分类或二级分类：新建 / 重命名 / 删除；拖卡片到左侧分类或二级分类即移动</div>
+    <div class="repo-main">
+      <aside class="repo-side" id="tagLibSide"></aside>
+      <div class="taglib-grid" id="tagLibGrid"></div>
+    </div>
+  </section>
+
+  <!-- 打标库文件夹右键菜单（文件管理器逻辑） -->
+  <div class="ctx-menu" id="repoCtx" hidden>
+    <button id="repoCtxNew" onclick="ctxNewFolder()">新建文件夹</button>
+    <button id="repoCtxRename" onclick="ctxRenameFolder()">重命名</button>
+    <button id="repoCtxDel" onclick="ctxDeleteFolder()">删除文件夹</button>
+  </div>
+
+  <!-- 标签库悬浮弹窗（设置=popup 时启用；内部动态装入 #viewTagLib 节点，保持唯一一份 DOM） -->
+  <div class="mask" id="tagLibMask" hidden onclick="if(event.target===this)closeTagLib()">
+    <div class="dialog" style="width:820px;height:min(680px,86vh);display:flex;flex-direction:column;overflow:hidden"></div>
+  </div>
+
+  <!-- 标签示例图查看大图（翻页 / 删除） -->
+  <div class="mask" id="tagImgMask" hidden onclick="if(event.target===this)closeTagImages()">
+    <div class="tag-img-box">
+      <img id="tiImg" alt="示例图">
+      <div class="tag-img-bar">
+        <button class="btn tiny ghost" onclick="tiNav(-1)" title="上一张">‹</button>
+        <span id="tiCnt" class="counter">1 / 1</span>
+        <button class="btn tiny ghost" onclick="tiNav(1)" title="下一张">›</button>
+        <button class="btn tiny ghost" onclick="tiMove(-1)" title="前移一张（调整顺序）">◀ 左移</button>
+        <button class="btn tiny ghost" onclick="tiMove(1)" title="后移一张">右移 ▶</button>
+        <button class="btn tiny ghost" onclick="tiSetCover()" title="设为封面（卡片缩略图显示这张）">★ 封面</button>
+        <button class="btn tiny ghost" onclick="tiReplace()" title="用新图片替换这张">🔄 替换</button>
+        <button class="btn tiny ghost danger" onclick="tiDel()">🗑 删除</button>
+        <button class="btn tiny" onclick="closeTagImages()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ============ 设置弹层 ============ -->
+<div class="mask" id="mask" hidden>
+  <div class="dialog" style="width:760px">
+    <div class="dialog-head">
+      <h3>设置</h3>
+      <button class="btn tiny ghost" onclick="closeSettings()">关闭</button>
+    </div>
+    <div class="set-wrap">
+      <aside class="set-nav" id="setNav">
+        <div class="set-nav-item" data-sec="api">🌐 翻译</div>
+        <div class="set-nav-item" data-sec="look">🎨 外观</div>
+        <div class="set-nav-item" data-sec="type">⌨ 输入习惯</div>
+        <div class="set-nav-item" data-sec="disp">🏷 标词显示</div>
+        <div class="set-nav-item" data-sec="lib">📚 标签库</div>
+        <div class="set-nav-item" data-sec="cache">🗂 缓存</div>
+        <div class="set-nav-item" data-sec="fmt">🧹 格式化</div>
+      </aside>
+      <div class="set-body">
+
+      <section class="set-sec" data-sec="api">
+      <div class="label">默认翻译引擎</div>
+      <select class="input" id="setApi"></select>
+      <div class="hint" style="margin:6px 0 10px;padding:8px 10px;background:var(--panel2);border-radius:8px">
+        首次启动默认用程序内置接口（免费），开箱即用。想换引擎在这里选，或选「自定义（OpenAI 兼容）」填自己的接口地址 / 密钥 / 模型
+      </div>
+      <div id="apiConfig"></div>
+      </section>
+
+      <section class="set-sec" data-sec="look">
+      <div class="label">界面主题</div>
+      <select class="input" id="setTheme">
+        <option value="dark">深色</option>
+        <option value="light">浅色</option>
+      </select>
+
+      <div class="label" style="margin-top:12px">当前图光圈颜色</div>
+      <div class="row" id="ringSwatches" style="margin:0 0 10px;align-items:center"></div>
+
+      <label class="check" style="margin-top:10px"><input type="checkbox" id="setNoAnim"> 关闭界面动画</label>
+      <div class="hint" style="margin:0">关掉视图切换、分类展开、卡片淡入等所有动效；内容直接显示、响应更快。保存后立即生效，重启后保持</div>
+      </section>
+
+      <section class="set-sec" data-sec="type">
+      <label class="check"><input type="checkbox" id="setAutoAdd"> 输入标词后自动添加（打逗号即入框，不用按回车，中文自动翻译）</label>
+      <div class="hint" style="margin:0 0 6px">未勾选时，仍需按回车添加（逗号仅用于分隔）</div>
+      <label class="check"><input type="checkbox" id="setAutoIdle"> 停手一会儿也自动入框（不打逗号也行）</label>
+      <div class="row" style="margin:0 0 6px">
+        <span class="hint">停顿</span>
+        <input class="input" id="setIdleSec" type="number" min="0.5" max="5" step="0.5" value="1.5" style="width:70px">
+        <span class="hint">秒后自动添加（0.5 ~ 5 秒）</span>
+      </div>
+
+      <div class="label" style="margin-top:12px">标签分隔符</div>
+      <input class="input" id="setSep" value=", ">
+      <div class="hint" style="margin:4px 0 0">导出 .txt 与复制提示词时，标签之间用什么隔开</div>
+
+      <div class="label" style="margin-top:12px">更多</div>
+      <div class="row">
+        <button class="btn tiny ghost" id="btnGp" title="全局提示词面板：在微信、记事本等任何输入框一键整段填入（开发中）">📋 全局粘贴板（开发中）</button>
+      </div>
+      <div class="hint" style="margin:4px 0 0">开发中的功能不占顶栏主位，需要时从这里打开</div>
+      </section>
+
+      <section class="set-sec" data-sec="disp">
+      <div class="row" style="margin:0 0 4px">
+        <span class="hint" style="width:70px">打标框</span>
+        <select class="input" id="setDispCap" style="width:180px">
+          <option value="both">双语（英文 + 中文）</option>
+          <option value="zh">仅中文</option>
+          <option value="en">仅英文</option>
+        </select>
+      </div>
+      <div class="row" style="margin:0 0 4px">
+        <span class="hint" style="width:70px">标签库</span>
+        <select class="input" id="setDispLib" style="width:180px">
+          <option value="both">双语（英文 + 中文）</option>
+          <option value="zh">仅中文</option>
+          <option value="en">仅英文</option>
+        </select>
+      </div>
+      <div class="row" style="margin:0 0 6px">
+        <span class="hint" style="width:70px">打标库</span>
+        <select class="input" id="setDispRepo" style="width:180px">
+          <option value="both">双语（英文 + 中文）</option>
+          <option value="zh">仅中文</option>
+          <option value="en">仅英文</option>
+        </select>
+      </div>
+      <div class="hint" style="margin:0 0 6px">三处可各自独立设置；没有中文翻译的自动显示英文</div>
+      <div class="hint" style="margin:0">导出的 .txt 始终用英文，不受此设置影响</div>
+      </section>
+
+      <section class="set-sec" data-sec="cache">
+      <div class="label">缩略图缓存</div>
+      <div class="row" style="margin:0 0 6px">
+        <span class="hint" id="thumbCacheInfo">正在统计…</span>
+        <span style="margin-left:auto"></span>
+        <button class="btn tiny ghost" onclick="refreshThumbCacheInfo()">刷新</button>
+        <button class="btn tiny ghost danger" onclick="clearThumbCache()">🧹 立即清理</button>
+      </div>
+      <div class="hint" style="margin:0 0 10px">缓存只是显示用的小图，删掉不影响原图、标签和打标库，下次打开会自动重新生成（首次会稍慢一点）</div>
+
+      <div class="label">启动时自动清理</div>
+      <select class="input" id="setThumbAuto" style="width:260px">
+        <option value="0">从不（缓存一直留着）</option>
+        <option value="7">清理超过 7 天的</option>
+        <option value="30">清理超过 30 天的</option>
+        <option value="-1">每次启动全部清理</option>
+      </select>
+      <div class="hint" style="margin:4px 0 10px">按缓存文件的生成时间算；设为「从不」则只增不减</div>
+
+      <label class="check"><input type="checkbox" id="setThumbMem"> 记住本次打开的缩略图（切换视图、重绘更快）</label>
+      <div class="hint" style="margin:0">同一张图在一个会话里只编码一次；占的是内存，关掉程序就释放</div>
+      </section>
+
+      <section class="set-sec" data-sec="fmt">
+      <div class="hint" style="margin:0;padding:10px 12px;background:var(--panel2);border-radius:8px">
+        格式化：清空 <b>data</b> 文件夹（标签库、打标库、设置、缓存都在里面），让程序回到刚装好的状态。
+      </div>
+      </section>
+
+      <section class="set-sec" data-sec="lib">
+      <div class="label">标签库界面</div>
+      <select class="input" id="setTaglibView" style="width:240px">
+        <option value="tab">主界面页签（与打标库同款）</option>
+        <option value="popup">悬浮弹窗</option>
+      </select>
+      <div class="hint" style="margin:4px 0 12px">标签库用「主界面页签」整屏显示（顶部有页签），还是点右上角「📚 标签库」时用「悬浮弹窗」打开；保存后立即生效</div>
+      <div class="label">标签染色</div>
+      <select class="input" id="setColorMode" style="width:240px">
+        <option value="off">关闭（默认样式）</option>
+        <option value="category">按分类统一上色（同分类下所有标签同色）</option>
+        <option value="individual">每个标签独立上色（每张卡片各自颜色）</option>
+        <option value="hybrid">混合模式（分类底色为默认，单张可单独覆盖）</option>
+      </select>
+      <div class="hint" style="margin:4px 0 12px">开启后：<b>按分类</b>在左侧分类项点🎨色点选色；<b>独立/混合</b>模式把鼠标移到标签卡片上、点右上角🎨给单张卡片上色（混合模式下分类色为默认底，单张设色则覆盖）。选色支持预设色 + 自定义取色器 + 清除</div>
+      <label class="check"><input type="checkbox" id="setLazyRender"> 海量卡片懒渲染（标签/打标网格只渲染视口内卡片）</label>
+      <div class="hint" style="margin:0">标签特别多（几千/上万）时更顺滑；若出现滚动条轻微跳动或布局异常，关掉即可恢复</div>
+      <div class="label" style="margin-top:12px">标签库维护</div>
+      <div class="row" style="margin:4px 0 0">
+        <button class="btn tiny" onclick="exportTagsBackup()">📤 导出备份</button>
+        <button class="btn tiny" onclick="importTagsBackup()">📥 导入备份</button>
+        <button class="btn tiny ghost danger" onclick="clearAllTagColors()">🧹 清除全部颜色</button>
+      </div>
+      <div class="hint" style="margin:6px 0 4px">导出：把当前标签库存成 JSON 备份，含自建的分类与标词；换电脑、重装前导一份，之后可导回</div>
+      <div class="hint" style="margin:0 0 8px">导入：选之前导出的 JSON 恢复标签库；<b>会替换当前内容</b>，建议先导出一份</div>
+      <div class="hint" id="setPluginHint" style="margin:0" hidden>奥术秘典导入在顶栏「🧩 插件」浮层里。</div>
+      </section>
+
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 查看库内图片 ============ -->
+<div class="mask" id="repoViewMask" hidden>
+  <div class="dialog" style="width:640px">
+    <div class="dialog-head">
+      <h3 id="rvName">图片</h3>
+      <button class="btn tiny ghost" onclick="closeRepoView()">关闭</button>
+    </div>
+    <div class="dialog-body">
+      <div id="rvImg" style="height:280px;border-radius:8px;display:grid;place-items:center;color:#fff;font-size:52px;background:var(--panel2)"></div>
+      <div class="label">来源</div>
+      <div id="rvSrc" class="hint" style="margin:0"></div>
+      <div class="label">标签</div>
+      <div id="rvTags" class="tags" style="border:1px solid var(--border);border-radius:8px;max-height:140px;padding:8px"></div>
+    </div>
+    <div class="dialog-foot">
+      <span class="hint" style="float:left">查看的是库内图片副本，不依赖原文件夹</span>
+      <button class="btn ghost" onclick="closeRepoView()">关闭</button>
+      <button class="btn" id="rvTranslate" onclick="translateRepoView()" hidden>🌐 补翻译</button>
+      <button class="btn" onclick="recaptionOne(repoTarget)">🔁 重新打标</button>
+      <button class="btn" onclick="repoToPrompt([repoTarget], &quot;pos&quot;)">📥 调用正向</button>
+      <button class="btn" onclick="repoToPrompt([repoTarget], &quot;neg&quot;)">📥 调用反向</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 插件浮层（由 boot() 检测插件后才显示顶栏入口） ============ -->
+<div class="mask" id="pluginMask" hidden onclick="if(event.target===this)closePlugins()">
+  <div class="dialog plugin-dialog">
+    <div class="dialog-head">
+      <h3>🧩 插件</h3>
+      <button class="btn tiny ghost" onclick="closePlugins()">关闭</button>
+    </div>
+    <div class="plugin-wrap">
+      <aside class="plugin-nav" id="pluginNav"></aside>
+      <div class="plugin-body" id="pluginBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 自定义光圈颜色（自制取色器） ============ -->
+<div class="mask" id="ringPickerMask" hidden onclick="if(event.target===this)closeRingPicker(false)">
+  <div class="dialog" style="width:300px">
+    <div class="dialog-head"><h3>自定义颜色</h3></div>
+    <div class="dialog-body">
+      <canvas id="svCanvas" width="240" height="160"
+              style="width:100%;display:block;border-radius:8px;border:1px solid var(--border);cursor:crosshair"></canvas>
+      <div id="hueBar" style="margin-top:10px;height:16px;border-radius:8px;cursor:pointer;position:relative;border:1px solid var(--border);background:linear-gradient(90deg,#ff0000,#ffff00,#00ff00,#00ffff,#0000ff,#ff00ff,#ff0000)">
+        <div id="hueKnob" style="position:absolute;top:-2px;width:10px;height:20px;border-radius:3px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.7);pointer-events:none"></div>
+      </div>
+      <div class="row" style="margin-top:10px;align-items:center">
+        <span id="svPreview" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);flex:0 0 auto"></span>
+        <input class="input" id="svHex" maxlength="7" style="width:110px">
+        <span class="hint">点上方选深浅，拖色相条换色系</span>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn ghost" onclick="closeRingPicker(false)">取消</button>
+      <button class="btn" onclick="closeRingPicker(true)">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 通用二次确认（代替浏览器原生 confirm） ============ -->
+<div class="mask" id="uiConfirmMask" hidden onclick="if(event.target===this)uiConfirmResolve(false)">
+  <div class="dialog" style="width:auto;min-width:440px;max-width:min(90vw,680px)">
+    <div class="dialog-head">
+      <h3 id="ucTitle">确认</h3>
+    </div>
+    <div class="dialog-body" id="ucBody" style="line-height:2"></div>
+    <div class="dialog-foot" id="ucFoot">
+      <button class="btn ghost" onclick="uiConfirmResolve(false)">取消</button>
+      <button class="btn" id="ucOk" onclick="uiConfirmResolve(true)">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 程序内输入弹窗（代替浏览器原生 prompt） ============ -->
+<div class="mask" id="uiPromptMask" hidden onclick="if(event.target===this)uiPromptResolve(false)">
+  <div class="dialog" style="width:420px">
+    <div class="dialog-head"><h3 id="upTitle">输入</h3></div>
+    <div class="dialog-body">
+      <div class="label" id="upLabel" style="margin:0 0 6px"></div>
+      <input class="input" id="upInput" style="width:100%" maxlength="50"
+             placeholder="" autocomplete="off">
+    </div>
+    <div class="dialog-foot">
+      <button class="btn ghost" onclick="uiPromptResolve(false)">取消</button>
+      <button class="btn" id="upOk" onclick="uiPromptResolve(true)">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 删除确认 ============ -->
+<div class="mask" id="repoDelMask" hidden>
+  <div class="dialog" style="width:440px">
+    <div class="dialog-head">
+      <h3>从打标库删除</h3>
+      <button class="btn tiny ghost" onclick="closeRepoDel()">取消</button>
+    </div>
+    <div class="dialog-body">
+      <div id="rdName" style="margin-bottom:10px;font-weight:600"></div>
+      <div class="hint" style="margin:0">库里存有该图片的副本，请选择删除方式：</div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn ghost" onclick="doRepoDel(false)">只从库中移除（保留图片副本）</button>
+      <button class="btn" style="background:var(--danger)" onclick="doRepoDel(true)">同时删除库内图片</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 手动添加到打标库 ============ -->
+<div class="mask" id="repoAddMask" hidden>
+  <div class="dialog" style="width:620px">
+    <div class="dialog-head">
+      <h3>手动添加到打标库</h3>
+      <button class="btn tiny ghost" onclick="closeRepoAdd()">关闭</button>
+    </div>
+    <div class="dialog-body">
+      <div class="row">
+        <button class="btn tiny" onclick="pickAddImages()">🖼 选择图片（可多选）</button>
+        <span class="hint" id="addImgCount"></span>
+      </div>
+      <div class="add-imgs" id="addImgs"></div>
+
+      <div class="label">标签（输入后回车，可逗号分隔多个，支持中文自动翻译）</div>
+      <input class="input" id="addTagInput" placeholder="例如：1girl, 长发, 微笑" style="width:100%">
+      <div class="tagbox" id="addTagsBox" style="min-height:70px;max-height:200px;margin-top:6px"></div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn tiny" onclick="translateAll(addDraft.tags, renderAddTags)">🌐 一键翻译</button>
+        <span class="hint">补齐所有标签的中英文对照</span>
+      </div>
+
+      <div class="label">触发词（可选，导出时排第一位）</div>
+      <input class="input" id="addTrigger" placeholder="例如：mychar" style="width:100%">
+
+      <div class="hint" style="margin-top:10px">图片会复制一份进库；选多张时，这套标签会应用到每一张</div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn ghost" onclick="closeRepoAdd()">取消</button>
+      <button class="btn" onclick="submitRepoAdd()">存入打标库</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 应用到全部 ============ -->
+<div class="mask" id="applyMask" hidden>
+  <div class="dialog" style="width:440px">
+    <div class="dialog-head">
+      <h3>应用到全部</h3>
+      <button class="btn tiny ghost" onclick="closeApply()">取消</button>
+    </div>
+    <div class="dialog-body">
+      <div id="applyInfo" style="margin-bottom:10px"></div>
+      <label class="check"><input type="checkbox" id="applyOnlyEmpty"> 只追加到还没打标的图</label>
+      <div class="hint">这是编辑动作，只改暂存的标签；要写进 .txt 仍需点「统一导出」</div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" onclick="doApplyAll()">确认追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+<!-- 新建标签弹窗（标签名称 + 标签内容） -->
+<div class="mask" id="tagCreateMask" hidden onclick="if(event.target===this)closeTagCreate()">
+  <div class="dialog" style="width:480px">
+    <div class="dialog-head">
+      <h3 id="tcTitle">＋ 新建标签</h3>
+      <button class="btn tiny ghost" onclick="closeTagCreate()">取消</button>
+    </div>
+    <div class="dialog-body">
+      <div class="hint" style="margin-bottom:4px">所属分类路径（可逐级展开下一级）</div>
+      <div id="tcPath" style="margin-bottom:10px"></div>
+      <div class="hint" style="margin-bottom:4px">标签名称</div>
+      <input class="input" id="tcName" placeholder="显示在标签库里的名字，如：风格1" style="width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')saveTagCreate()">
+      <div class="hint" style="margin-bottom:4px">标签内容</div>
+      <textarea class="input" id="tcContent" rows="5" placeholder="实际插入提示词的内容（可多行/含逗号；留空则与名称相同）" style="width:100%;resize:vertical"></textarea>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn ghost" onclick="closeTagCreate()">✕ 取消</button>
+      <button class="btn accent" onclick="saveTagCreate()">✓ 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重命名标签弹窗（标签名称 + 标签内容） -->
+<div class="mask" id="tagRenameMask" hidden onclick="if(event.target===this)closeTagRename()">
+  <div class="dialog" style="width:480px">
+    <div class="dialog-head">
+      <h3 id="trTitle">重命名标签</h3>
+      <button class="btn tiny ghost" onclick="closeTagRename()">取消</button>
+    </div>
+    <div class="dialog-body">
+      <div class="hint" style="margin-bottom:4px">标签名称</div>
+      <input class="input" id="trName" placeholder="显示在标签库里的名字，如：风格1" style="width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')saveTagRename()">
+      <div class="hint" style="margin-bottom:4px">标签内容</div>
+      <textarea class="input" id="trContent" rows="5" placeholder="实际插入提示词的内容（可多行/含逗号；留空则与名称相同）" style="width:100%;resize:vertical"></textarea>
+
+      <div class="hint" style="margin:10px 0 4px">示例图（第一张为卡片封面；可点「＋添加图片」，也可直接把图片拖进下面区域）</div>
+      <div class="tr-imgs" id="trImgs"></div>
+      <input type="file" id="trImgFile" accept="image/*" multiple hidden onchange="trAddFiles(this.files)">
+      <div class="row" style="margin-top:6px">
+        <button class="btn tiny ghost" onclick="$('#trImgFile').click()">＋ 添加图片</button>
+      </div>
+
+      <div class="hint" style="margin:10px 0 4px">标签颜色</div>
+      <div class="row">
+        <span id="trColorSw" class="tr-color-sw" title="当前颜色"></span>
+        <button class="btn tiny ghost" onclick="trPickColor()">🎨 选择颜色</button>
+        <button class="btn tiny ghost danger" id="trColorClear" hidden onclick="trClearColor()">清除颜色</button>
+      </div>
+      <div class="hint" id="trColorHint" style="margin-top:4px"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn ghost" onclick="closeTagRename()">✕ 取消</button>
+      <button class="btn accent" onclick="saveTagRename()">✓ 保存</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* 打标模式：左右两栏折叠（只切换 class，不改业务状态） */
+function togglePane(id){
+  var p = document.getElementById(id);
+  if (!p) return;
+  p.classList.toggle("collapsed");
+  var on = !p.classList.contains("collapsed");
+  p.querySelectorAll(".pane-toggle,.pane-rail").forEach(function(b){
+    b.setAttribute("aria-expanded", on ? "true" : "false");
+  });
+}
+
+/* 打标模式：左右两栏拖动调宽（只改布局变量，不影响业务状态） */
+(function(){
+  var main = document.querySelector(".main");
+  if (!main) return;
+
+  var KEY = "capPaneWidths";
+  var LIMITS = { tag: { min: 160, max: 360 }, right: { min: 220, max: 460 } };
+  var CENTER_MIN = 360;          // 中间图像栏最小宽度
+  var state = { tag: 210, right: 300 };
+
+  // 两侧可占用的总宽：主区宽度扣掉内边距、面板间距、两个拖柄和中间最小宽
+  function budget(){
+    return Math.max(
+      LIMITS.tag.min + LIMITS.right.min,
+      main.clientWidth - 24 - 12 - 5 - 16 - 8 - 5 - CENTER_MIN
+    );
+  }
+  function clamp(which, w){
+    var other = which === "tag" ? state.right : state.tag;
+    return Math.max(LIMITS[which].min, Math.min(LIMITS[which].max, budget() - other, Math.round(w)));
+  }
+  function set(which, w){
+    state[which] = w;
+    main.style.setProperty(which === "tag" ? "--tag-w" : "--cap-right-w", w + "px");
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+  }
+
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && saved.tag && saved.right) { state.tag = saved.tag; state.right = saved.right; }
+  } catch(e){}
+
+  // 布局完成后再按实际可用宽度收敛：首次执行时 clientWidth 可能为 0
+  function syncLayout(){
+    set("tag", clamp("tag", state.tag));
+    set("right", clamp("right", state.right));
+  }
+  function init(){
+    requestAnimationFrame(function(){ requestAnimationFrame(syncLayout); });
+  }
+  if (document.readyState === "complete") init();
+  else window.addEventListener("load", init);
+
+  function bind(handleId, which){
+    var h = document.getElementById(handleId);
+    if (!h) return;
+    var paneId = which === "tag" ? "tagPanel" : "capRight";
+    h.addEventListener("pointerdown", function(e){
+      if (e.button !== 0) return;
+      var pane = document.getElementById(paneId);
+      if (pane && pane.classList.contains("collapsed")) return;   // 折叠时不拖动
+      e.preventDefault();
+      h.classList.add("dragging");
+      document.documentElement.classList.add("resizing");
+      if (h.setPointerCapture) h.setPointerCapture(e.pointerId);
+      var x0 = e.clientX, w0 = state[which];
+      function move(ev){
+        var delta = which === "tag" ? ev.clientX - x0 : x0 - ev.clientX;
+        set(which, clamp(which, w0 + delta));
+      }
+      function end(){
+        h.classList.remove("dragging");
+        document.documentElement.classList.remove("resizing");
+        h.removeEventListener("pointermove", move);
+        h.removeEventListener("pointerup", end);
+        h.removeEventListener("pointercancel", end);
+        save();
+      }
+      h.addEventListener("pointermove", move);
+      h.addEventListener("pointerup", end);
+      h.addEventListener("pointercancel", end);
+    });
+  }
+  bind("splitLeft", "tag");
+  bind("splitRight", "right");
+
+  window.addEventListener("resize", syncLayout);
+})();
+</script>
+
+</body>
+</html>
