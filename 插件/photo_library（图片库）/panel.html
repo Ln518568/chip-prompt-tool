@@ -1,0 +1,161 @@
+<div id="plPanel" class="pl-panel" data-has-sel="0" data-has-any="0">
+<style>
+/* 照片库面板：图片网格是主体，占满面板剩余高度并在内部滚动 */
+#plPanel{display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:0;font-size:12px;color:var(--text)}
+
+/* 顶部操作条：左侧主操作，右侧破坏性操作 */
+#plPanel .pl-bar{
+  display:flex;flex-direction:column;gap:8px;flex:0 0 auto;min-width:0;
+  padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);
+}
+#plPanel .pl-bar-row{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap}
+#plPanel .pl-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto;flex-wrap:nowrap}
+#plPanel .pl-actions .btn{flex:0 0 auto;white-space:nowrap}
+#plPanel .pl-div{display:none;width:1px;height:16px;background:var(--border);flex:0 0 auto}
+#plPanel[data-has-any="1"] .pl-div{display:block}
+#plPanel .pl-destructive{margin-left:auto;opacity:.9}
+#plPanel .pl-only-sel,#plPanel .pl-only-any{display:none}
+#plPanel[data-has-sel="1"] .pl-only-sel{display:inline-flex}
+#plPanel[data-has-any="1"] .pl-only-any{display:inline-flex}
+
+/* 选中信息：缩略图 + 文件名 + 尺寸/大小 + 清除 */
+#plPanel .pl-selbar{
+  display:flex;align-items:center;gap:8px;min-width:0;
+  padding-top:8px;border-top:1px solid var(--border);
+}
+#plPanel .pl-sel-thumb{
+  display:none;width:26px;height:26px;flex:0 0 auto;object-fit:cover;
+  border:1px solid var(--border);border-radius:4px;background:var(--bg);
+}
+#plPanel[data-has-sel="1"] .pl-sel-thumb{display:block}
+#plPanel .pl-sel-name{
+  flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:11.5px;color:var(--text);
+}
+#plPanel[data-has-sel="0"] .pl-sel-name{color:var(--faint)}
+#plPanel .pl-sel-meta{
+  flex:0 0 auto;white-space:nowrap;font-size:11px;color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+#plPanel .pl-sel-clear{margin-left:auto;display:none;flex:0 0 auto;white-space:nowrap}
+#plPanel[data-has-sel="1"] .pl-sel-clear{display:inline-flex}
+
+/* 卡片 */
+#plPanel .pl-card{
+  display:flex;flex-direction:column;gap:9px;min-width:0;min-height:0;
+  padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);
+}
+#plPanel #plLibCard{flex:1 1 auto;min-height:0}
+#plPanel #plFolderCard{flex:0 1 auto;max-height:46%;min-height:0;overflow:hidden}
+#plPanel #plFolderList{flex:1 1 auto;min-height:0;overflow:auto}
+/* 只有文件夹引用、库内无照片时（JS 会隐藏 #plLibCard），让文件夹区接管剩余高度 */
+#plPanel:has(#plLibCard[style*="none"]) #plFolderCard{flex:1 1 auto;max-height:none}
+
+#plPanel .pl-card-head{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:nowrap}
+#plPanel .pl-sec{
+  display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;white-space:nowrap;
+  font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--muted);
+}
+#plPanel .pl-sec::before{content:"";width:3px;height:11px;border-radius:2px;background:var(--accent);opacity:.85}
+#plPanel .pl-count{
+  display:inline-flex;align-items:center;flex:0 0 auto;white-space:nowrap;
+  padding:2px 8px;border:1px solid var(--border);border-radius:999px;background:var(--chip);
+  font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;
+}
+#plPanel .pl-head-hint{
+  flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:11px;color:var(--faint);
+}
+#plPanel .pl-search{flex:0 0 auto;width:150px;margin:0 0 0 auto}
+
+/* 图片网格：自适应列宽，缩略图统一 4:3 */
+#plPanel .pl-well{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));
+  gap:10px;align-content:flex-start;align-items:start;min-height:0;overflow:auto;
+  padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);
+}
+#plPanel .pl-well:empty{display:none}
+#plPanel #plGrid{flex:1 1 auto}
+#plPanel .pl-well>div{
+  width:auto!important;padding:0!important;overflow:hidden;border-radius:8px!important;
+  background:var(--panel2)!important;transition:border-color .15s ease;
+}
+/* 只用边框提示 hover，不缩放、不发光 */
+#plPanel .pl-well>div:hover{box-shadow:none;outline:1px solid var(--border-strong);outline-offset:-1px}
+#plPanel .pl-well>div>img{
+  width:100%!important;height:auto!important;min-height:0!important;aspect-ratio:4/3;
+  object-fit:cover!important;border-radius:0!important;display:block!important;background:var(--bg);
+}
+#plPanel .pl-well>div>.hint{
+  margin:0!important;padding:5px 7px;border-top:1px solid var(--border);background:var(--panel2);
+  font-size:11px;line-height:1.4;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+/* 空态：紧凑，带主按钮 */
+#plPanel .pl-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  flex:0 0 auto;min-height:132px;padding:16px;border:1px dashed var(--border);border-radius:8px;
+  background:var(--bg);text-align:center;font-size:12px;color:var(--faint);
+}
+#plPanel .pl-empty .btn{white-space:nowrap}
+
+/* 说明：默认折叠，整页只保留这一处 */
+#plPanel .pl-help{flex:0 0 auto;padding-top:8px;border-top:1px solid var(--border);font-size:11px}
+#plPanel .pl-help summary{
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;
+  color:var(--muted);white-space:nowrap;
+}
+#plPanel .pl-help summary::-webkit-details-marker{display:none}
+#plPanel .pl-help summary::before{content:"›";display:inline-block;transition:transform .15s ease}
+#plPanel .pl-help[open] summary::before{transform:rotate(90deg)}
+#plPanel .pl-help p{margin:8px 0 0;line-height:1.65;color:var(--muted)}
+</style>
+
+<section class="pl-bar">
+  <div class="pl-bar-row">
+    <div class="pl-actions">
+      <button class="btn tiny accent" onclick="plAdd()">添加照片</button>
+      <button class="btn tiny" onclick="plAddFolder()" title="选择一个本机文件夹：只记录路径，图片从磁盘现读，不复制、不占存储">添加文件夹</button>
+    </div>
+    <span class="pl-div" aria-hidden="true"></span>
+    <div class="pl-actions pl-destructive">
+      <button class="btn tiny ghost danger pl-only-sel" onclick="plDelSel()">删除选中</button>
+      <button class="btn tiny ghost danger pl-only-any" onclick="plClearAll()">清空库</button>
+    </div>
+  </div>
+  <div class="pl-selbar">
+    <img id="plSelThumb" class="pl-sel-thumb" alt="">
+    <span id="plSel" class="pl-sel-name">未选中任何照片</span>
+    <span id="plSelMeta" class="pl-sel-meta"></span>
+    <button class="btn tiny ghost pl-sel-clear" onclick="plClearSel()">清除选中</button>
+  </div>
+</section>
+
+<section class="pl-card" id="plFolderCard" style="display:none">
+  <div class="pl-card-head">
+    <span class="pl-sec">文件夹照片</span>
+    <span class="counter pl-count" id="plFolderCnt">0 张</span>
+    <span class="pl-head-hint">只存路径不复制图片 · 单击选中 · 双击看原图</span>
+  </div>
+  <div id="plFolderList"></div>
+</section>
+
+<section class="pl-card" id="plLibCard">
+  <div class="pl-card-head">
+    <span class="pl-sec">全部照片</span>
+    <span class="counter pl-count" id="plCnt">0 张</span>
+    <input class="input pl-search" id="plSearch" placeholder="筛选照片" oninput="plRender()">
+  </div>
+  <div id="plGrid" class="pl-well"></div>
+  <div class="pl-empty" id="plEmpty">
+    <span id="plEmptyTxt">库里还没有照片</span>
+    <button class="btn tiny accent" onclick="plAdd()">添加照片</button>
+  </div>
+</section>
+
+<details class="pl-help">
+  <summary>说明</summary>
+  <p>添加照片：存进浏览器本地存储（约 5MB，自动压缩到最长边 1024px）。添加文件夹：只记录路径，图片每次从磁盘读取，数量不限、不占存储；路径被移动或删除时会提示，放回原位置自动恢复，也可手动移除该引用。</p>
+</details>
+</div>
