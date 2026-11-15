@@ -1,0 +1,4 @@
+{
+  "_说明": "可选：输入图共享文件的完整路径。留空则用 本目录\\shared\\input.png（由 /chip/upload 自动写入）。也可设环境变量 CHIP_PROMPT_TOOL_COMFY_INPUT 覆盖。",
+  "input_file": ""
+}

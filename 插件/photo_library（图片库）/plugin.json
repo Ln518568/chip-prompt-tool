@@ -1,0 +1,9 @@
+{
+  "id": "photo_library",
+  "name": "照片库",
+  "version": "1.2.0",
+  "icon": "📷",
+  "desc": "独立纯照片库：加图 / 文件夹引用读取（只引用不存盘）/ 网格 / 选中送图 / 删除",
+  "entry": { "html": "panel.html", "js": "panel.js" },
+  "requires": ["pick_folder", "list_images", "list_images_recursive", "path_exists", "thumb", "preview"]
+}
